@@ -1,13 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Voice Live Client</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Live Agent Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #333;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 0.85rem 1.75rem;
+      font-size: 1.05rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #startBtn {
+      background-color: #0078d4;
+      color: white;
+    }
+
+    #startBtn:hover {
+      background-color: #005ea0;
+    }
+
+    #stopBtn {
+      background-color: #e81123;
+      color: white;
+    }
+
+    #stopBtn:disabled {
+      background-color: #f3b2b2;
+      cursor: not-allowed;
+    }
+
+    audio {
+      margin-top: 2rem;
+      display: block;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 1rem;
+      font-size: 0.85rem;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <h1>Voice Live Client</h1>
-  <button id="startBtn" onclick="startStreaming()">Start</button>
-  <button id="stopBtn" onclick="stopStreaming()" disabled>Stop</button>
+  <h1>🎙️ Voice Live Agent Demo</h1>
+  <div class="subtitle">Talk to an AI agent in real time. Click below to start.</div>
+
+  <div class="controls">
+    <button id="startBtn" onclick="startStreaming()" title="Start talking to the voice agent">
+      Start Talking to Agent
+    </button>
+    <button id="stopBtn" onclick="stopStreaming()" disabled title="End the conversation with the agent">
+      Stop Conversation
+    </button>
+  </div>
+
   <audio id="ttsPlayer" autoplay></audio>
+
+  <footer>
+    Powered by Azure Voice Live • Demo Mode
+  </footer>
 
   <script>
     let mediaStream, source, processor, socket;
