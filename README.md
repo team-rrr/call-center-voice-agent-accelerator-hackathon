@@ -54,46 +54,65 @@ The solution includes:
 
 
 >[!NOTE]
-- Region: swedencentral is strongly recommended due to AI Foundry availability.
-
-- Post-Deployment: You can also setup ACS Event Grid subscription and PSTN to use the ACS client.
+>- Region: swedencentral is strongly recommended due to AI Foundry availability.
+>- Post-Deployment: You can also setup ACS Event Grid subscription and PSTN to use the ACS client.
 
 ## Test the Agent
 
-Once deployment is complete, you can test the agent through either the web client or ACS phone call.
+After deployment, you can verify that your Voice Agent is running correctly using either the Web Client (for quick testing) or the ACS Phone Client (for simulating a real-world call center scenario).
 
-🌐 Web Client
-Go to the Azure Portal and navigate to the resource group created by the deployment.
+🌐 Web Client (Test Mode)
 
-Find the **Container App** resource.
+Use this browser-based client to confirm your Container App is up and responding.
 
-Click into the container app, and in the Overview page, locate the Application URL.
+1. Go to the [Azure Portal](https://portal.azure.com) and navigate to the **Resource Group** created by your deployment.
+2. Find and open the **Container App** resource.
+3. On the **Overview** page, copy the **Application URL**.
+4. Open the URL in your browser — a demo webpage should load.
+5. Click **Start Talking to Agent** to begin a voice session using your browser’s microphone and speaker.
+6. Click **Stop Conversation** to end the session.
 
-Click the URL — a demo webpage should open.
+> ⚠️ This web client is intended for testing purposes only. Use the ACS client below for production-like call flow testing.
 
-On the webpage, click Start to begin speaking with the agent via your browser's microphone and speaker.
 
-📞 ACS Client (Optional)
-Find the **Communication Services** resource in the same resource group.
 
-In the left-hand menu, click **Events**.
+📞 ACS Client (Call Center Scenario)
 
-Click **+ Event Subscription**:
-   - Set the **Event Type** to `IncomingCall`.
-   - Set the **Endpoint Type** to `Web Hook`.
-   - For **Endpoint Address**, use:  
+This simulates a real inbound phone call to your voice agent using **Azure Communication Services (ACS)**.
+
+
+#### 1. Set Up Incoming Call Webhook
+
+1. In the same resource group, find and open the **Communication Services** resource.
+2. In the left-hand menu, click **Events**.
+3. Click **+ Event Subscription** and fill in the following:
+
+   - **Event Type**: `IncomingCall`
+   - **Endpoint Type**: `Web Hook`
+   - **Endpoint Address**:
      ```
      https://<your-container-app-url>/acs/incomingcall
      ```
-     Replace `<your-container-app-url>` with the Application URLfrom your **Container App** resource's overview page.
-Refer to the screenshot below for guidance:
+     Replace `<your-container-app-url>` with the Application URL from your Container App.
 
-   ![Event Subscription screenshot](./docs/images/acs_eventsubscription_v0.0.1.png)
+📸 Refer to the screenshot below for guidance:
 
-Get a phone number for your ACS resource:  
-   👉 [How to get a phone number (Microsoft Docs)](https://learn.microsoft.com/azure/communication-services/quickstarts/telephony/get-phone-number?tabs=windows&pivots=platform-azp-new)
+![Event Subscription screenshot](./docs/images/acs_eventsubscription_v0.0.1.png)
 
-Once everything is configured, call the number — your call will connect to the real-time agent.
+
+#### 2. Get a Phone Number
+
+If you haven't already, obtain a phone number for your ACS resource:
+
+👉 [How to get a phone number (Microsoft Docs)](https://learn.microsoft.com/azure/communication-services/quickstarts/telephony/get-phone-number?tabs=windows&pivots=platform-azp-new)
+
+
+#### 3. Call the Agent
+
+Once your event subscription is configured and the phone number is active:
+
+- Dial the ACS number.
+- Your call will connect to the real-time voice agent powered by Azure Voice Live.
 
 ## Clean up resources
 
