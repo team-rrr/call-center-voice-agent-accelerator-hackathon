@@ -1,0 +1,45 @@
+openapi: 3.0.0
+info:
+  title: AI Foundry Events API (sample)
+  version: 0.1.0
+paths:
+  /events/call:
+    post:
+      summary: Notify on call start
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                call_id:
+                  type: string
+                caller_id:
+                  type: string
+                callback_uri:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /events/transcript:
+    post:
+      summary: Submit user transcript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                session_id:
+                  type: string
+                transcript:
+                  type: string
+      responses:
+        '200':
+          description: OK
