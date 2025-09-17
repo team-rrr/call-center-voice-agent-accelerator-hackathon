@@ -10,8 +10,8 @@ The Azure Communication Services Calls Automation APIs provide telephony integra
 <br/>
 
 <div align="center">
-  
-[**SOLUTION OVERVIEW**](#solution-overview) \| [**QUICK DEPLOY**](#quick-deploy) \| [**TESTING**](#testing-the-agent) \| [**RESOURCE CLEAN-UP**](#resource-clean-up)
+
+[**SOLUTION OVERVIEW**](#solution-overview) \| [**QUICK DEPLOY**](#quick-deploy) \| [**TESTING**](#testing-the-agent) \| [**TROUBLESHOOTING**](#troubleshooting) \| [**TEAM DEPLOYMENTS**](#team-deployments) \| [**RESOURCE CLEAN-UP**](#resource-clean-up)
 
 </div>
 <br/>
@@ -159,8 +159,155 @@ Once your event subscription is configured and the phone number is active:
 Once the environment has been deployed with `azd up` you can also run the application locally.
 
 Please follow the instructions in [the instructions in `service`](./service/README.md)
+Instead use the [`server`](./server/README.md) directory for local execution details.
 
 <br/>
+
+## Troubleshooting
+
+Common deployment issues and how to resolve them.
+
+### 1. Container image error: MANIFEST_UNKNOWN
+**Error (excerpt):**
+```
+Field 'template.containers.main.image' ... MANIFEST_UNKNOWN: manifest tagged by "latest" is not found
+```
+**Cause:** The Bicep template falls back to a hard-coded image tag `voice-live-agent/app-voiceagent:latest` in your Azure Container Registry (ACR). That repository:tag wasn't pushed yet, so the first Container App revision fails.
+**Fix (recommended workflow)**
+
+1) Build and push the image that the Bicep fallback expects (substitute your ACR name):
+
+```bash
+# Example (replace with your ACR name):
+az acr build -r callcenterbhbq3v -t voice-live-agent/app-voiceagent:latest ./server
+```
+
+2) Reprovision infra outputs if the initial `azd up` failed before writing outputs:
+
+```bash
+azd provision
+```
+
+3) If reprovisioning fails or to inspect Container App revisions, list revisions:
+
+```bash
+az containerapp revision list -g <RESOURCE_GROUP> -n <CONTAINER_APP_NAME> -o table
+```
+
+4) If the revision list shows zero or failed revisions, force an update with the pushed image (example names shown below; substitute your resource names):
+
+```bash
+az containerapp update -g rg-callcenterb-hbq3v -n ca-callcenterb-hbq3v \
+    --image callcenterbhbq3v.azurecr.io/voice-live-agent/app-voiceagent:latest
+```
+
+5) After forcing a valid image, redeploy the app code:
+
+```bash
+azd deploy
+```
+
+**Validate image manifests (optional):**
+
+```bash
+az acr repository show-manifests -n <REGISTRY_NAME> --repository voice-live-agent/app-voiceagent -o table
+```
+
+### 2. azd deploy error: could not determine container registry endpoint
+**Error:**
+```
+failed deploying service 'app': could not determine container registry endpoint
+```
+**Cause:** Environment variable `AZURE_CONTAINER_REGISTRY_ENDPOINT` was never populated (initial `azd up` failed before outputs were written).
+
+**Fix:** Set it manually or re-run provisioning.
+```bash
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <REGISTRY_NAME>.azurecr.io
+azd deploy
+```
+Or refresh infra outputs:
+```bash
+azd provision
+```
+
+### 3. azd deploy error: getting latest revision name: %!w(<nil>)
+**Cause:** A formatting bug surfaced when the Container App had no successful revision (previous image pull failure). azd could not resolve a latest revision.
+
+**Fix Options:**
+```bash
+# Force a new revision with a valid image
+az containerapp update -g <RESOURCE_GROUP> -n <APP_NAME> \
+    --image <REGISTRY_NAME>.azurecr.io/voice-live-agent/app-voiceagent:latest
+
+# If still failing, delete and let azd recreate
+az containerapp delete -g <RESOURCE_GROUP> -n <APP_NAME> --yes
+azd deploy
+```
+
+### 4. Confirm Container App revisions
+```bash
+az containerapp revision list -g <RESOURCE_GROUP> -n <APP_NAME> -o table
+```
+Look for a revision in `Active` state. If only `Failed` revisions exist, fix the image/tag and redeploy.
+
+### 5. Check registry permissions (AcrPull)
+Ensure the user-assigned identity attached to the Container App has `AcrPull` on the registry:
+```bash
+REG_ID=$(az acr show -n <REGISTRY_NAME> --query id -o tsv)
+az role assignment list --scope $REG_ID -o table | grep AcrPull || echo "Missing AcrPull"
+```
+Add if missing:
+```bash
+az role assignment create --assignee <IDENTITY_PRINCIPAL_ID> --scope $REG_ID --role AcrPull
+```
+
+### 6. Parameterizing the image (recommended improvement)
+Instead of a hard-coded fallback, add a Bicep parameter (example sketch):
+```bicep
+@description('Full container image (registry/repository:tag).')
+param containerImage string = ''
+// inside container definition
+image: empty(containerImage) ? (fetchLatestImage.outputs.containers[0]?.image ?? '') : containerImage
+```
+Then set it via environment variable mapping or `azd env set`.
+
+---
+
+## Team Deployments
+
+To let teammates deploy to the same already-provisioned resource group without sharing your local `.azure` folder (never commit it):
+
+### 1. Grant Access
+Assign at least `Contributor` role on the resource group (and optionally `AcrPush` if they will build images).
+
+### 2. Teammate Local Setup
+```bash
+git clone <repo-url>
+cd call-center-voice-agent-accelerator-hackathon
+azd auth login
+az account set --subscription <SUB_ID>
+azd env new <EXISTING_ENV_NAME> --subscription <SUB_ID> --location <LOCATION>
+azd env refresh   # pulls outputs (ACR endpoint, etc.) from existing deployment
+```
+
+### 3. Deploy Application Code Only
+```bash
+azd deploy
+```
+Use `azd provision` only when infrastructure (Bicep) changes are merged.
+
+### 4. Environment Variables
+If a value is missing (e.g., `AZURE_CONTAINER_REGISTRY_ENDPOINT`), run:
+```bash
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <REGISTRY_NAME>.azurecr.io
+```
+
+### 5. Best Practices
+- Do NOT commit `.azure/`.
+- Provide an example file (e.g., `.azure/env.example`) listing expected variable names (no secrets).
+- Use CI/CD with a service principal for production deployments.
+
+---
 
 ## Resource Clean-up
 
