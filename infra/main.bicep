@@ -64,6 +64,19 @@ module registry 'modules/containerregistry.bicep' = {
   dependsOn: [ appIdentity ]
 }
 
+// Build container image after registry is created
+module containerBuild 'modules/container-build.bicep' = {
+  name: 'container-build'
+  scope: rg
+  params: {
+    location: location
+    containerRegistryName: registry.outputs.name
+    sourceLocation: '.'
+    identityId: appIdentity.outputs.identityId
+    tags: tags
+  }
+}
+
 
 module aiServices 'modules/aiservices.bicep' = {
   name: 'ai-foundry-deployment'
@@ -125,13 +138,13 @@ module containerapp 'modules/containerapp.bicep' = {
     exists: appExists
     identityId: appIdentity.outputs.identityId
     containerRegistryName: registry.outputs.name
+    containerImageName: containerBuild.outputs.imageName
     aiServicesEndpoint: aiServices.outputs.aiServicesEndpoint
     modelDeploymentName: modelName
     aiServicesKeySecretUri: keyvault.outputs.aiServicesKeySecretUri
     acsConnectionStringSecretUri: keyvault.outputs.acsConnectionStringUri
     logAnalyticsWorkspaceName: logAnalyticsName
   }
-  dependsOn: [keyvault, RoleAssignments]
 }
 
 
