@@ -5,7 +5,7 @@ Feature: Voice-Enabled Multi-Agent Orchestration Accelerator
 Branch: 001-what-a-voice
 
 ## Method
-Extracted unknowns & focal points from spec + constitution. Focused on latency, schemas, orchestration patterns, resilience, consent, and observability.
+Extracted unknowns & focal points from spec + constitution. Refocused on minimal schemas, basic orchestration pattern, and resilience (latency/consent/export deferred).
 
 ## Findings
 
@@ -24,10 +24,10 @@ Extracted unknowns & focal points from spec + constitution. Focused on latency, 
 - Rationale: Contracts-first principle; enables validation + future evolution.
 - Alternatives: Ad-hoc Pydantic only (harder external consumption) rejected.
 
-### 4. Event Naming & Correlation
-- Decision: correlation_id per session; each event includes event_id (UUIDv7), timestamp (RFC3339), type.
-- Rationale: Traceability & analytics alignment.
-- Alternatives: Incremental counters (hard in distributed cases) rejected.
+### 4. Event Naming (Simplified)
+- Decision: Minimal event type strings only; no correlation ids in MVP.
+- Rationale: Reduce overhead; instrumentation deferred.
+- Alternatives: Full correlation & structured logging (added complexity) rejected.
 
 ### 5. Barge-In Handling Strategy
 - Decision: On new user audio onset while TTS streaming, issue stop signal to TTS engine and flush pending audio buffer; emit `barge_in` event.
@@ -39,39 +39,26 @@ Extracted unknowns & focal points from spec + constitution. Focused on latency, 
 - Rationale: Protect latency and avoid cascading retries.
 - Alternatives: Higher thresholds delay recovery; lower cause flapping.
 
-### 7. Transcript Export Redaction
-- Decision: Exclude tool invocation parameters flagged sensitive; hash user identifiers (SHA256 salt env-provided) before export.
-- Rationale: Privacy + minimal retained PII.
-- Alternatives: Full raw export (privacy risk) rejected.
-
-### 8. Consent Revocation Flow
-- Decision: Mark session state consent_revoked; cease new persistence (logs limited to operational minimal), disable transcript export, allow continuation ephemeral.
-- Rationale: Align with Responsible AI principle.
-- Alternatives: Immediate forced termination (poor UX) rejected.
-
-### 9. Latency Measurement Harness
-- Decision: Timestamps at pipeline stages: audio_end, stt_complete, intent_routed, agent_response_start, first_audio_chunk_sent. Compute deltas; emit metrics.
-- Rationale: Enables verification of <1500ms initial response.
-- Alternatives: Coarse total-only metric hides bottlenecks.
-
+### 7. (Removed) Transcript Export / Redaction
+### 8. (Removed) Consent Revocation Flow
+### 9. (Removed) Latency Measurement Harness
 ### 10. Quota & Cost Pre-Deploy Script
 - Decision: Script queries model quota usage + estimated cost from configurable threshold; fails if >90% quota or budget warning threshold exceeded.
 - Rationale: Constitution cost gate compliance.
 - Alternatives: Manual review error-prone.
 
 ## Open Questions (To Resolve in Phase 1)
-1. Do we need an explicit progress update minimum interval override per task type? (Default 10s acceptable for now.)
-2. Should multilingual fallback attempt auto-detect or enforce specified language list? (Plan: auto-detect, clamp to supported.)
+1. Do we impose a max tasks per session now or later? (Leaning later once planner exists.)
 
 ## Risk Log
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Latency regression with added instrumentation | Miss P95 target | Measure overhead early; optimize log path |
 | Planner task explosion | Resource overuse | Enforce max tasks/session (TBD Phase 1) |
-| Consent revocation partial logging gap | Compliance issue | Add unit test for state transition coverage |
+| (Removed features) Consent/export gap | None (out of scope) | Reintroduce in post-MVP roadmap |
 
 ## Decisions Summary
-All critical unknowns resolved; remaining questions non-blocking and deferred to Phase 1 design refinement.
+All critical unknowns for MVP resolved; removed features documented for future phases.
 
 ## Status
 Phase 0: COMPLETE

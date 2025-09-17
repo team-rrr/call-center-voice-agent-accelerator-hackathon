@@ -66,7 +66,8 @@ Initial Constitution Check: PASS (no violations requiring Complexity Tracking ye
 
 ### Documentation (this feature)
 ```
-specs/[###-feature]/
+## Summary
+Primary outcome: Enable real-time voice interaction where user speech is transcribed, intents decomposed into simple agent tasks, and responses streamed back while tasks complete. MVP deliberately omits: formal latency SLO measurement, multilingual support, consent revocation, transcript export, structured observability, and rate limiting to accelerate iteration using the already functional Quart async bridge.
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
 ├── data-model.md        # Phase 1 output (/plan command)
@@ -78,21 +79,21 @@ specs/[###-feature]/
 ### Source Code (repository root)
 ```
 # Option 1: Single project (DEFAULT)
-src/
+**Primary Dependencies**: Quart, websockets, httpx, Azure SDK (Speech/Communication), Azure OpenAI (GPT-4/GPT-4o), (future) Semantic Kernel, pytest
 ├── models/
-├── services/
+**Storage**: None (all in-memory; no persistence layer in MVP)
 ├── cli/
-└── lib/
+**Testing**: pytest (basic unit + WebSocket integration stubs)
 
-tests/
+**Target Platform**: Azure Container Apps (Linux x86_64)
 ├── contract/
-├── integration/
+**Project Type**: Web (single backend + static client)
 └── unit/
-
+**Performance Goals**: Qualitative responsiveness only (no instrumentation phase 1)
 # Option 2: Web application (when "frontend" + "backend" detected)
-backend/
+**Constraints**: No committed secrets; managed identity if available; intent queue depth 5
 ├── src/
-│   ├── models/
+**Scale/Scope**: Prototype (≤50 concurrent sessions assumed; not enforced)
 │   ├── services/
 │   └── api/
 └── tests/
@@ -106,38 +107,38 @@ frontend/
 
 # Option 3: Mobile + API (when "iOS/Android" detected)
 api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure]
-```
-
-**Structure Decision**: Option 1 (Single project) retained; existing `server/` acts as backend. Static client assets remain under `server/app/static/`. No separate frontend directory until complexity justifies.
-
+| Observability & Traceability | Basic console logging only (no structured metrics) | Faster iteration; add structured logs later |
+| Performance & Resilience | Qualitative responsiveness; simple retries only | Avoid early instrumentation overhead |
+| Ethical & Responsible AI | Transparency notice only (no consent revocation workflow) | Scope reduction for speed |
 ## Phase 0: Outline & Research
-1. **Extract unknowns from Technical Context** above:
+1. Validate Azure Speech vs ACS Voice Live integration sequence (latency tuning deferred).
    - For each NEEDS CLARIFICATION → research task
-   - For each dependency → best practices task
+4. Define minimal event naming (no correlation ids in MVP).
    - For each integration → patterns task
-
-2. **Generate and dispatch research agents**:
-   ```
-   For each unknown in Technical Context:
-     Task: "Research {unknown} for {feature context}"
-   For each technology choice:
-     Task: "Find best practices for {tech} in {domain}"
-   ```
-
+7. (Removed) Transcript export / redaction deferred.
+8. (Removed) Consent revocation flow deferred.
+9. (Removed) Latency measurement harness deferred.
+10. Quota & cost pre-deploy script responsibilities.
+- Data Model: Entities (Session, Utterance, Task, Agent, ToolInvocation) [ConsentRecord, TranscriptExport removed]
+- FR-001..FR-007 → Session + transcription + routing tests (foundational contract tasks)
+- FR-008..FR-015 → Planner decomposition + background task lifecycle tasks
+- FR-016..FR-020 → Session management (timeouts, transparency, arbitration, error handling, cancellation)
 3. **Consolidate findings** in `research.md` using format:
-   - Decision: [what was chosen]
-   - Rationale: [why chosen]
-   - Alternatives considered: [what else evaluated]
+5. Transparency
+6. Arbitration
+7. (Removed) Metrics & reporting deferred
+6. Arbitration
+7. (Removed) Metrics & reporting deferred
 
-**Output**: research.md with all NEEDS CLARIFICATION resolved
+Parallelizable ([P]) candidates: Schema validation tests, basic planner routing, cancellation flow.
 
-Planned Research Topics:
+Complexity Guardrails: Target ≤25 tasks; merge or defer anything not essential to basic voice + agent loop.
 1. Validate Azure Speech vs ACS Voice Live integration sequence & latency tuning best practices.
 2. Evaluate Semantic Kernel patterns for multi-agent planner + executor composition (Python).
+| Omitted structured observability | Speed of prototype | Structured layer adds friction now |
+| Omitted latency instrumentation | Reduce upfront complexity | Instrumentation overhead not yet justified |
+| Removed consent revocation & export | Narrow initial scope | Governance features not core to demo |
+| Removed rate limiting & multilingual | Focus single-language baseline | Avoid branching & test surface early |
 3. Determine minimal JSON schema set (session, utterance, task, agent_message, error_event).
 4. Define event naming + correlation strategy aligning with observability principle.
 5. Barge-in interruption handling strategies (audio stream cancellation patterns).

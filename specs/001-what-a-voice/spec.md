@@ -51,7 +51,7 @@
 A product developer wants to quickly prototype a real-time voice interaction experience where an end user speaks naturally, the system transcribes speech, routes intent to one or more specialized intelligent agents (planner, domain expert, executor), and returns synthesized spoken and textual responses while background tasks continue until completion.
 
 ### Acceptance Scenarios
-1. **Given** a user starts a new voice session, **When** they speak an initial request (e.g., "Check order status and notify shipping"), **Then** the system should capture audio, produce a transcript, delegate sub-tasks to appropriate agents, and provide an audible confirmation within a target response latency.
+1. **Given** a user starts a new voice session, **When** they speak an initial request (e.g., "Check order status and notify shipping"), **Then** the system should capture audio, produce a transcript, delegate sub-tasks to appropriate agents, and provide an audible confirmation.
 2. **Given** an agent is executing a long-running background task, **When** the user asks for progress, **Then** the system reports current task status (queued, running, completed, failed) in both textual and spoken form.
 3. **Given** simultaneous user speech overlap (user interrupts agent response), **When** interruption occurs, **Then** the system should stop playback and prioritize new user intent processing.
 4. **Given** a restricted tool capability request (e.g., data export) outside user permissions, **When** the user attempts it, **Then** the system declines with a clear explanation and does not invoke the restricted action.
@@ -63,39 +63,32 @@ A product developer wants to quickly prototype a real-time voice interaction exp
 4. Conflicting agent outputs: higher confidence wins; delta <0.1 → ask user to clarify.
 5. Background task failure while user idle: surfaced at next utterance or session summary.
 6. Audio degradation: if avg transcription confidence <0.70 over last 3 utterances → offer text-only mode.
-7. Consent revoked mid-session: stop new logging; option to terminate or continue with ephemeral processing.
+7. (Removed) Consent revocation handling omitted for simplified scope.
 
 ### Functional Requirements
 **FR-001** System MUST allow a user to initiate a new real-time voice interaction session.
 **FR-002** System MUST transcribe user speech with configurable minimum confidence threshold (default 0.75) below which clarification is requested.
 **FR-003** System MUST detect user intent and route tasks to specialized agents.
 **FR-004** System MUST support concurrent background task execution while continuing dialogue.
-**FR-005** System MUST provide audible and textual responses with initial response latency ≤ 1500 ms (P95) from end of user utterance.
+**FR-005** System MUST provide audible and textual responses.
 **FR-006** System MUST maintain session context (recent intents, agent outputs) for the session duration.
 **FR-007** System MUST allow the user to request status of any running background task by natural language query.
 **FR-008** System MUST enable a planner role to decompose complex user requests into sub-tasks.
 **FR-009** System MUST enforce access control with two roles (standard, elevated); elevated grants data export & admin tasks; unauthorized attempts rejected with explanation.
-**FR-010** System MUST log each user utterance, agent decision, and tool invocation with correlation id; logs retained 30 days then purged.
+**FR-010** System MUST log each user utterance and agent decision.
 **FR-011** System MUST allow interruption (barge-in) of system speech by new user speech.
 **FR-012** System MUST request clarification when transcription confidence falls below threshold.
 **FR-013** System MUST provide a mechanism to end a session and summarize completed tasks.
 **FR-014** System MUST prevent invocation of disallowed tools in presence of prompt injection attempts.
 **FR-015** System MUST record and expose background task states (queued, running, succeeded, failed, canceled).
 **FR-016** System MUST allow configuration of inactivity timeout; default 2 minutes.
-**FR-017** System MUST allow export of structured session transcript (excluding protected data) in JSON plus optional plain text summary.
-**FR-018** System MUST support a fallback interaction mode when real-time audio unavailable.
-**FR-019** System MUST provide a mechanism for users to revoke consent for further data processing within active session.
-**FR-020** System MUST present a transparency notice indicating AI-generated content at session start.
+**FR-017** System MUST support a fallback interaction mode when real-time audio unavailable.
+**FR-018** System MUST present a transparency notice indicating AI-generated content at session start.
 **FR-021** System MUST mitigate conflicting agent outputs via confidence ranking; delta <0.1 triggers clarification request.
 **FR-022** System MUST surface errors in comprehensible natural language without exposing internal sensitive details.
 **FR-023** System MUST allow configuration of maximum session duration; default 30 minutes.
-**FR-024** System MUST emit structured event logs suitable for downstream analytics.
-**FR-025** System SHOULD provide real-time progress indicators for long-running tasks updating at least every 10 seconds.
-**FR-026** System MUST allow safe cancellation of running background tasks by user command when permissible.
-**FR-027** System MUST enforce rate limiting: max 20 user utterances per rolling 60 seconds per session.
-**FR-028** System MUST support multilingual speech input (en, es, fr) initially; unsupported languages receive polite notice.
-**FR-029** System MUST prioritize user input when overlapping with system audio.
-**FR-030** System MUST provide session-level metrics (duration, number of tasks, average latency) for reporting.
+**FR-019** System MUST allow safe cancellation of running background tasks by user command when permissible.
+**FR-020** System MUST prioritize user input when overlapping with system audio.
 
 ---
 ## Assumptions & Decisions
@@ -103,12 +96,9 @@ A product developer wants to quickly prototype a real-time voice interaction exp
 2. P95 latency target 1500 ms preserves conversational feel.
 3. Confidence threshold 0.75 minimizes misinterpretation risk while avoiding excessive clarifications.
 4. Two-role model (standard/elevated) prevents premature complexity.
-5. 30-day log retention balances observability and privacy; longer retention requires governance approval.
-6. Rate limit (20 utterances / 60s) protects against abuse without stalling natural dialog.
-7. Queue depth limit 5 keeps backlog relevant; overflow signals user to pace requests.
-8. Arbitration delta 0.1 avoids trivial clarification loops.
-9. Initial multilingual scope (en, es, fr) focuses on quality before expansion.
-10. Session hard cap 30 minutes prevents indefinite resource consumption.
+5. Queue depth limit 5 keeps backlog relevant; overflow signals user to pace requests.
+6. Arbitration delta 0.1 avoids trivial clarification loops.
+7. Session hard cap 30 minutes prevents indefinite resource consumption.
 
 ### Key Entities *(include if feature involves data)*
 - **Session**: Represents a single continuous interaction period; attributes: id, start time, end time, status, user id (or anonymous), language, metrics summary.
@@ -116,8 +106,7 @@ A product developer wants to quickly prototype a real-time voice interaction exp
 - **Agent**: A specialized reasoning component; attributes: name, capabilities list, version, allowed tools, guardrails.
 - **Task**: A unit of work derived from an intent; attributes: id, session id, originating agent, status, created timestamp, completion timestamp, result summary.
 - **Tool Invocation**: Execution record of an external action; attributes: id, task id, tool name, parameters (sanitized), outcome status, duration.
-- **Transcript Export**: Generated artifact summarizing session dialogue and outcomes (redacted fields per policy).
-- **Consent Record**: Captures user acknowledgment of AI transparency notice and any revocations.
+
 
 ---
 
