@@ -4,7 +4,7 @@ Date: 2025-09-17
 Feature: Voice-Enabled Multi-Agent Orchestration Accelerator
 
 ## Overview
-Derived from feature spec FR-001..FR-030 and Phase 0 research. Emphasis on minimal viable entities and clear state transitions.
+Aligned with trimmed MVP FR-001..FR-023 after scope reduction. Removed deferred constructs (language, metrics, multi-role access, advanced arbitration, consent/export). Emphasis on only what runtime presently needs plus forward-compatible placeholders (Task, ToolInvocation).
 
 ## Entities
 
@@ -14,8 +14,9 @@ Fields:
 - status (enum: active, ended)
 - start_time (datetime)
 - end_time (datetime|null)
-- user_role (enum: standard, elevated)
 - version (string semver)
+
+Removed (deferred): user_role, language, metrics summary.
 
 ### Utterance
 Fields:
@@ -82,7 +83,8 @@ Fields:
 - Task.result_summary present only if status in (succeeded, failed, canceled).
 
 ## Open Items
-- Max tasks per session (placeholder): propose cap=25 to prevent overload (finalize later).
+- Task cap per session deferred (low complexity in MVP traffic expectation).
+*- Consider re-introducing metrics object once observability phase resumes.*
 
 ## Versioning
 Initial model version 0.1.0 aligned with constitution version.

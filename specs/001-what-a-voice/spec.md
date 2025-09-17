@@ -95,20 +95,19 @@ Audit Note: Original broader draft included requirements now intentionally defer
 
 ---
 ## Assumptions & Decisions
-1. Silence prompt at 30s and termination at 2m balance engagement vs. resource use.
-2. P95 latency target 1500 ms preserves conversational feel.
-3. Confidence threshold 0.75 minimizes misinterpretation risk while avoiding excessive clarifications.
-4. Two-role model (standard/elevated) prevents premature complexity.
-5. Queue depth limit 5 keeps backlog relevant; overflow signals user to pace requests.
-6. Arbitration delta 0.1 avoids trivial clarification loops.
-7. Session hard cap 30 minutes prevents indefinite resource consumption.
+1. Silence prompt at 30s and termination at 2m (if implemented) are deferred; MVP only includes transcript redaction and basic end-session triggers (hangup or agent directive).
+2. Confidence threshold (default 0.75) is configurable but no dynamic adaptation logic in MVP.
+3. Multi-role access control, advanced arbitration heuristics, and session hard caps are deferred to a future iteration—removed from current scope to minimize cognitive surface.
+4. Queue depth management and background task lifecycle visibility are out-of-scope for MVP; any internal tasking will be minimal and not user-facing beyond placeholder tool invocation.
+5. Latency targets are aspirational only; no instrumentation or SLO enforcement included.
+6. Model versioning appears only as a passive string field; no migration handling required in MVP.
 
-### Key Entities *(include if feature involves data)*
-- **Session**: Represents a single continuous interaction period; attributes: id, start time, end time, status, user id (or anonymous), language, metrics summary.
-- **Utterance**: A discrete segment of user speech; attributes: id, session id, raw transcript text, confidence score, timestamp.
-- **Agent**: A specialized reasoning component; attributes: name, capabilities list, version, allowed tools, guardrails.
-- **Task**: A unit of work derived from an intent; attributes: id, session id, originating agent, status, created timestamp, completion timestamp, result summary.
-- **Tool Invocation**: Execution record of an external action; attributes: id, task id, tool name, parameters (sanitized), outcome status, duration.
+### Key Entities *(current MVP scope)*
+- **Session**: Continuous interaction period; fields (MVP): id, status (active|ended), start_time, end_time (nullable), version. (Removed: language, metrics, user_role.)
+- **Utterance**: Segment of caller speech; fields: id, session_id, text, confidence, start_time, end_time, interrupted.
+- **Agent**: Pluggable strategy abstraction; fields: name, version, purpose (descriptive), allowed_tools (placeholder), guardrails (optional config object). Not all fields used in MVP runtime logic yet.
+- **Task**: Deferred / minimal; retained schema for forward compatibility but not actively surfaced (status changes optional). Fields retained for future expansion.
+- **Tool Invocation**: Placeholder record for logged function/tool calls; only id, task_id, tool_name, parameters (sanitized), outcome_status, duration, timestamp.
 
 
 ---
