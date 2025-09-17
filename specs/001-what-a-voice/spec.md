@@ -3,7 +3,7 @@
 **Feature Branch**: `001-what-a-voice`
 **Created**: 2025-09-17
 **Status**: Draft
-**Input**: User description: "A voice-enabled, multi-agent orchestration accelerator built with Azure AI, FastAPI, and Semantic Kernel. It lets users interact naturally via speech while intelligent agents handle tasks in the background. Why: To simplify the development of real-time, voice-first applications that require modular, intelligent behavior—making it easier for developers to prototype and deploy multi-agent systems without starting from scratch."
+**Input**: User description (original): "A voice-enabled, multi-agent orchestration accelerator built with Azure AI, FastAPI, and Semantic Kernel." (NOTE: Implementation pivoted to Quart for the MVP; Semantic Kernel integration deferred. Description retained for historical context.) It lets users interact naturally via speech while intelligent agents handle tasks in the background. Why: To simplify the development of real-time, voice-first applications that require modular, intelligent behavior—making it easier for developers to prototype and deploy multi-agent systems without starting from scratch.
 
 ## Execution Flow (main)
 ```

@@ -31,18 +31,18 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Primary outcome: Enable real-time, low-latency voice interaction where user speech is transcribed, intents decomposed into agent tasks, and responses streamed back while background tasks continue. Plan emphasizes contracts-first schemas (session, utterance, task), strict latency + confidence thresholds (P95 ≤1500ms initial response, transcription confidence ≥0.75), and ethical transparency + consent handling. Technical approach: FastAPI backend with WebSocket for audio/control, Semantic Kernel orchestrated agents (planner, executor, domain-specific), Azure Speech / ACS for voice capture + TTS, structured observability (JSON logs, correlation IDs), and minimal initial multilingual support (en, es, fr).
+Primary outcome: Enable real-time, low-latency voice interaction where user speech is transcribed, intents decomposed into agent tasks, and responses streamed back while background tasks continue. Plan emphasizes contracts-first schemas (session, utterance, task), confidence threshold handling, and lean transparency. Technical approach (MVP): Quart backend with WebSocket (or ACS media) for audio/control, lightweight pluggable agent strategy (initial echo/LLM call), Azure Speech / ACS for voice capture + TTS. Structured observability, Semantic Kernel orchestration, and multilingual support are deferred.
 
 ## Technical Context
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: FastAPI, Uvicorn, Semantic Kernel (Python), Azure SDK (Speech/Communication), Azure OpenAI (GPT-4/GPT-4o), Pydantic, pytest
+**Primary Dependencies (MVP)**: Quart, websockets, httpx, Azure SDK (Communication/Speech), Azure OpenAI, Pydantic (or pydantic-core usage), pytest
 **Storage**: None initially (ephemeral in-memory structures + Azure telemetry); future persistence gated by constitution
 **Testing**: pytest (unit, integration, contract), coverage enforcement ≥90% for handlers & orchestration modules
 **Target Platform**: Azure Container Apps (Linux x86_64)
 **Project Type**: Web (backend API + lightweight static client)
-**Performance Goals**: Initial response P95 ≤1500ms from utterance end; streaming start <800ms; barge-in handling <200ms cutover
-**Constraints**: No committed secrets; managed identity only; log retention 30 days; rate limit 20 utterances / 60s / session; queue depth 5
-**Scale/Scope**: Prototype scope (single container, ≤ concurrent 50 active sessions baseline testing)
+**Performance Goals (Aspirational)**: Responsive conversational feel; no formal latency instrumentation in MVP
+**Constraints**: No committed secrets; managed identity preferred; no formal rate limiting or queue depth enforcement in MVP
+**Scale/Scope**: Prototype scope (single container, ~≤50 concurrent sessions qualitative target)
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -134,7 +134,7 @@ Parallelizable ([P]) candidates: Schema validation tests, basic planner routing,
 
 Complexity Guardrails: Target ≤25 tasks; merge or defer anything not essential to basic voice + agent loop.
 1. Validate Azure Speech vs ACS Voice Live integration sequence & latency tuning best practices.
-2. Evaluate Semantic Kernel patterns for multi-agent planner + executor composition (Python).
+2. (Deferred) Evaluate Semantic Kernel patterns for multi-agent planner + executor composition (post-MVP).
 | Omitted structured observability | Speed of prototype | Structured layer adds friction now |
 | Omitted latency instrumentation | Reduce upfront complexity | Instrumentation overhead not yet justified |
 | Removed consent revocation & export | Narrow initial scope | Governance features not core to demo |
