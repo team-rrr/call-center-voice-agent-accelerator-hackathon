@@ -3,19 +3,27 @@ This project is managed using `pyproject.toml` and the [`uv`](https://github.com
 
 ## 1. Test with Web Client
 
-### Set Up Environment Variables
-Based on .env-sample.txt, create and construct your .env file to allow your local app to access your Azure resource.
+### Local quickstart
 
-### Run the App Locally
-1. Run the local server:
+1. From the project `server/` directory copy the sample env and fill in values:
 
-    ```shell
-    py server.py
-    ```
+```bash
+cp .env.sample .env
+# edit .env and set AZURE_VOICE_LIVE_API_KEY, AZURE_VOICE_LIVE_ENDPOINT
+# set ACS_CONNECTION_STRING if you will use ACS features
+```
 
-3. Once the app is running, open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser (or click the printed URL in the terminal).
+2. Start the server (development workflow used during testing):
 
-4. On the page, click **Start** to begin speaking with the agent using your browser’s microphone and speaker.
+```bash
+uv run server.py
+```
+
+3. Open http://127.0.0.1:8000 in your browser and click **Start** to use the web client.
+
+Notes
+- You must have appropriate RBAC permissions to obtain the Voice Live API key and the ACS connection string. This typically requires permissions to read or create secrets (Key Vault roles or equivalent) and permissions to manage Communication Services resources.
+- See the main README for full deployment details: ../README.md
 
 ### Run with Docker (Alternative)
 
@@ -70,7 +78,7 @@ To test Azure Communication Services (ACS) locally, we’ll expose the local ser
 3. Use the following settings:
    - **Event type**: `IncomingCall`
    - **Endpoint type**: `Web Hook`
-   - **Endpoint URL**:  
+   - **Endpoint URL**:
      ```
      https://<your-tunnel>.devtunnels.ms:8000/acs/incomingcall
      ```
