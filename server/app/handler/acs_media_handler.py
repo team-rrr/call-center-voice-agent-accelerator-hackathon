@@ -9,6 +9,7 @@ import uuid
 from azure.identity.aio import ManagedIdentityCredential
 from websockets.asyncio.client import connect as ws_connect
 from websockets.typing import Data
+from app.ai_foundry_client import AiFoundryClient
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,11 @@ class ACSMediaHandler:
         self.model = config["VOICE_LIVE_MODEL"]
         self.api_key = config["AZURE_VOICE_LIVE_API_KEY"]
         self.client_id = config["AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID"]
+        try:
+            self.foundry = AiFoundryClient(config)
+        except Exception:
+            logger.info("AiFoundryClient not configured for media handler")
+            self.foundry = None
         self.send_queue = asyncio.Queue()
         self.ws = None
         self.send_task = None
@@ -140,6 +146,15 @@ class ACSMediaHandler:
                     case "conversation.item.input_audio_transcription.completed":
                         transcript = event.get("transcript")
                         logger.info("User: %s", transcript)
+                        # Forward transcript to orchestrator (best-effort)
+                        try:
+                            if self.foundry:
+                                session_id = event.get("session", {}).get("id") if event.get("session") else None
+                                if not session_id:
+                                    session_id = str(uuid.uuid4())
+                                await self.foundry.send_user_transcript(session_id, transcript)
+                        except Exception:
+                            logger.exception("Failed sending transcript to Foundry")
 
                     case "conversation.item.input_audio_transcription.failed":
                         error_msg = event.get("error")

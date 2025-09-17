@@ -95,3 +95,22 @@ To test Azure Communication Services (ACS) locally, we’ll expose the local ser
 - Use the **web client** for fast local testing.
 - Use **DevTunnel + ACS** to simulate phone calls and test telephony integration.
 - Customize the `.env` file, system prompts, and runtime behavior to fit your use case.
+
+## AI Foundry multi-agent orchestrator integration
+
+This project can optionally notify a multi-agent orchestrator (Azure AI Foundry) when calls start
+and forward user transcripts. The integration is optional and enabled by setting the following
+environment variables (in addition to the existing Voice Live / ACS vars):
+
+- `AI_FOUNDRY_ENDPOINT` (required to enable integration) - full https URL to the foundry HTTP API
+- `AI_FOUNDRY_API_KEY` (optional) - API key fallback if Managed Identity / AAD tokens are unavailable
+- `AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID` (optional) - use a user-assigned managed identity to request AAD tokens
+
+The code will prefer Managed Identity / DefaultAzureCredential for auth. No secrets are hardcoded.
+
+Behavior:
+- `acs_event_handler` will call `notify_call_started` when a call is answered.
+- `acs_media_handler` will call `send_user_transcript` when a transcription completes.
+
+These calls are best-effort: failures will be logged but won't block call handling.
+

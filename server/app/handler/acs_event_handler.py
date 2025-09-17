@@ -13,6 +13,7 @@ from azure.communication.callautomation import (AudioFormat,
 from azure.communication.callautomation.aio import CallAutomationClient
 from azure.eventgrid import EventGridEvent, SystemEventNames
 from quart import Response
+from app.ai_foundry_client import AiFoundryClient
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,12 @@ class AcsEventHandler:
         self.acs_client = CallAutomationClient.from_connection_string(
             config["ACS_CONNECTION_STRING"]
         )
+        # Foundry client is optional; create if endpoint present
+        try:
+            self.foundry = AiFoundryClient(config)
+        except Exception:
+            logger.info("AiFoundryClient not configured; continuing without Foundry integration")
+            self.foundry = None
 
     async def process_incoming_call(self, events: list, host_url, config):
         """Processes incoming call events and answers calls with media streaming."""
@@ -90,6 +97,14 @@ class AcsEventHandler:
                     callback_url=callback_uri,
                     media_streaming=media_streaming_options,
                 )
+
+                # Notify orchestrator (best-effort)
+                try:
+                    if self.foundry:
+                        # use the generated guid as a local call id
+                        await self.foundry.notify_call_started(str(guid), caller_id, callback_uri)
+                except Exception:
+                    logger.exception("Failed to notify AI Foundry of call start")
 
                 logger.info(
                     "Answered call for connection id: %s", result.call_connection_id
