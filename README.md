@@ -173,15 +173,42 @@ Common deployment issues and how to resolve them.
 Field 'template.containers.main.image' ... MANIFEST_UNKNOWN: manifest tagged by "latest" is not found
 ```
 **Cause:** The Bicep template falls back to a hard-coded image tag `voice-live-agent/app-voiceagent:latest` in your Azure Container Registry (ACR). That repository:tag wasn't pushed yet, so the first Container App revision fails.
+**Fix (recommended workflow)**
 
-**Fix Options:**
-- Build & push the expected image:
-    ```bash
-    az acr build -r <REGISTRY_NAME> -t voice-live-agent/app-voiceagent:latest ./server
-    ```
-- Or change the image reference (parameterize in Bicep) to a tag that exists.
+1) Build and push the image that the Bicep fallback expects (substitute your ACR name):
 
-**Validate:**
+```bash
+# Example (replace with your ACR name):
+az acr build -r callcenterbhbq3v -t voice-live-agent/app-voiceagent:latest ./server
+```
+
+2) Reprovision infra outputs if the initial `azd up` failed before writing outputs:
+
+```bash
+azd provision
+```
+
+3) If reprovisioning fails or to inspect Container App revisions, list revisions:
+
+```bash
+az containerapp revision list -g <RESOURCE_GROUP> -n <CONTAINER_APP_NAME> -o table
+```
+
+4) If the revision list shows zero or failed revisions, force an update with the pushed image (example names shown below; substitute your resource names):
+
+```bash
+az containerapp update -g rg-callcenterb-hbq3v -n ca-callcenterb-hbq3v \
+    --image callcenterbhbq3v.azurecr.io/voice-live-agent/app-voiceagent:latest
+```
+
+5) After forcing a valid image, redeploy the app code:
+
+```bash
+azd deploy
+```
+
+**Validate image manifests (optional):**
+
 ```bash
 az acr repository show-manifests -n <REGISTRY_NAME> --repository voice-live-agent/app-voiceagent -o table
 ```
