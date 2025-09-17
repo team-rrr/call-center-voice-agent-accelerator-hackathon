@@ -66,29 +66,32 @@ A product developer wants to quickly prototype a real-time voice interaction exp
 7. (Removed) Consent revocation handling omitted for simplified scope.
 
 ### Functional Requirements
-**FR-001** System MUST allow a user to initiate a new real-time voice interaction session.
-**FR-002** System MUST transcribe user speech with configurable minimum confidence threshold (default 0.75) below which clarification is requested.
-**FR-003** System MUST detect user intent and route tasks to specialized agents.
-**FR-004** System MUST support concurrent background task execution while continuing dialogue.
-**FR-005** System MUST provide audible and textual responses.
-**FR-006** System MUST maintain session context (recent intents, agent outputs) for the session duration.
-**FR-007** System MUST allow the user to request status of any running background task by natural language query.
-**FR-008** System MUST enable a planner role to decompose complex user requests into sub-tasks.
-**FR-009** System MUST enforce access control with two roles (standard, elevated); elevated grants data export & admin tasks; unauthorized attempts rejected with explanation.
-**FR-010** System MUST log each user utterance and agent decision.
-**FR-011** System MUST allow interruption (barge-in) of system speech by new user speech.
-**FR-012** System MUST request clarification when transcription confidence falls below threshold.
-**FR-013** System MUST provide a mechanism to end a session and summarize completed tasks.
-**FR-014** System MUST prevent invocation of disallowed tools in presence of prompt injection attempts.
-**FR-015** System MUST record and expose background task states (queued, running, succeeded, failed, canceled).
-**FR-016** System MUST allow configuration of inactivity timeout; default 2 minutes.
-**FR-017** System MUST support a fallback interaction mode when real-time audio unavailable.
-**FR-018** System MUST present a transparency notice indicating AI-generated content at session start.
-**FR-021** System MUST mitigate conflicting agent outputs via confidence ranking; delta <0.1 triggers clarification request.
-**FR-022** System MUST surface errors in comprehensible natural language without exposing internal sensitive details.
-**FR-023** System MUST allow configuration of maximum session duration; default 30 minutes.
-**FR-019** System MUST allow safe cancellation of running background tasks by user command when permissible.
-**FR-020** System MUST prioritize user input when overlapping with system audio.
+
+Audit Note: Original broader draft included requirements now intentionally deferred (multi-role access control, planner decomposition, advanced arbitration, transparency notice, max session duration control, background task lifecycle, fallback mode, injection prevention hardening). After scope reduction to a lean voice MVP, identifiers are renumbered contiguously. Content below reflects only retained MVP functionality.
+
+**FR-001** System MUST allow a user to initiate a voice session via inbound PSTN call to a published ACS phone number.
+**FR-002** System MUST auto-answer an inbound call within 3 rings and begin media streaming.
+**FR-003** System SHOULD establish full-duplex audio between caller and AI within ~2 seconds of answer (best-effort; no formal latency instrumentation in MVP).
+**FR-004** System MUST transcribe caller audio in near real-time and provide incremental partial hypotheses to the agent logic.
+**FR-005** System MUST segment speech into finalized utterances using voice activity detection.
+**FR-006** System MUST synthesize agent textual responses to audio (TTS) and stream them back with low perceived latency.
+**FR-007** System MUST handle caller interruption (barge-in) by pausing or attenuating active AI playback and prioritizing new user speech.
+**FR-008** System MUST maintain a rolling in-memory session context (recent N utterances + agent turns) for grounding.
+**FR-009** System MUST end the session cleanly when caller hangs up or an agent issues an end directive.
+**FR-010** System MUST build and retain (in memory only) a finalized transcript with speaker labels and timestamps for post-call inspection.
+**FR-011** System MUST emit minimal internal events: session_started, utterance_started, utterance_finalized, agent_response, session_ended, error.
+**FR-012** System MUST allow configuring the TTS voice via environment variable.
+**FR-013** System MUST redact sequences of 12 or more consecutive digits in the final transcript view (simple regex best-effort) to reduce accidental leakage of obvious sensitive numbers.
+**FR-014** System MUST expose a lightweight health endpoint returning build/version and readiness status.
+**FR-015** System MUST support a pluggable agent strategy interface (e.g., echo vs. LLM) without changing the call handling pipeline.
+**FR-016** System MUST retry transient outbound API calls (LLM / TTS) up to 2 additional times with backoff on network/server errors.
+**FR-017** System MUST log structured error events including a stable error code and message (stack trace optional) for debugging.
+**FR-018** System MUST cap in-memory context (by turn count or token estimate) and truncate oldest turns once the limit is exceeded.
+**FR-019** System MUST mask raw audio payloads and API secrets (keys, tokens) from logs.
+**FR-020** System MUST provide a simple in-browser developer test harness page to simulate or monitor a call session.
+**FR-021** System MUST load configuration from environment variables with validation of required settings at startup and sane defaults for optional ones.
+**FR-022** System SHOULD support hot reload / fast local dev workflow documented in the quickstart.
+**FR-023** System MUST allow a placeholder function/tool invocation request from the agent runtime that is logged (no external side effects executed in MVP).
 
 ---
 ## Assumptions & Decisions
