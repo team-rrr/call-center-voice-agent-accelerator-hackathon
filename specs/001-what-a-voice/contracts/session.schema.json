@@ -1,0 +1,28 @@
+{
+  "$id": "https://example.com/schemas/session.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session",
+  "type": "object",
+  "required": ["id", "status", "start_time", "language", "user_role", "version"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "status": {"type": "string", "enum": ["active", "inactive", "ended", "consent_revoked"]},
+    "start_time": {"type": "string", "format": "date-time"},
+    "end_time": {"type": ["string", "null"], "format": "date-time"},
+    "language": {"type": "string", "enum": ["en", "es", "fr"]},
+    "user_role": {"type": "string", "enum": ["standard", "elevated"]},
+    "metrics": {
+      "type": "object",
+      "required": ["latency_ms_first_response", "utterance_count", "task_count", "avg_confidence"],
+      "properties": {
+        "latency_ms_first_response": {"type": "integer", "minimum": 0},
+        "utterance_count": {"type": "integer", "minimum": 0},
+        "task_count": {"type": "integer", "minimum": 0},
+        "avg_confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "version": {"type": "string"}
+  },
+  "additionalProperties": false
+}

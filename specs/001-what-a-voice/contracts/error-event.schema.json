@@ -1,0 +1,15 @@
+{
+  "$id": "https://example.com/schemas/error-event.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ErrorEvent",
+  "type": "object",
+  "required": ["id", "timestamp", "error_type", "message"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "error_type": {"type": "string"},
+    "message": {"type": "string"},
+    "details": {"type": ["object", "null"]}
+  },
+  "additionalProperties": false
+}

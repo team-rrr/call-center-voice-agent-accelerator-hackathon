@@ -1,0 +1,19 @@
+{
+  "$id": "https://example.com/schemas/task.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "type": "object",
+  "required": ["id", "session_id", "originating_agent", "status", "created_at", "updated_at"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "originating_agent": {"type": "string"},
+    "status": {"type": "string", "enum": ["queued", "running", "succeeded", "failed", "canceled"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "result_summary": {"type": ["string", "null"], "maxLength": 2048},
+    "error_code": {"type": ["string", "null"], "maxLength": 128},
+    "progress": {"type": "integer", "minimum": 0, "maximum": 100}
+  },
+  "additionalProperties": false
+}

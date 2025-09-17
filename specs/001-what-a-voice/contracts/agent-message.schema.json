@@ -1,0 +1,15 @@
+{
+  "$id": "https://example.com/schemas/agent-message.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentMessage",
+  "type": "object",
+  "required": ["id", "agent", "type", "timestamp"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "agent": {"type": "string"},
+    "type": {"type": "string", "enum": ["plan", "action", "observation", "response", "error"]},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "payload": {"type": ["object", "null"]}
+  },
+  "additionalProperties": false
+}
