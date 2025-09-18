@@ -5,7 +5,7 @@ import os
 from app.handler.acs_event_handler import AcsEventHandler
 from app.handler.acs_media_handler import ACSMediaHandler
 from dotenv import load_dotenv
-from quart import Quart, request, websocket
+from quart import Quart, request, websocket, jsonify
 
 load_dotenv()
 
@@ -77,6 +77,44 @@ async def web_ws():
 async def index():
     """Serves the static index page."""
     return await app.send_static_file("index.html")
+
+
+@app.route("/api/orchestrator", methods=["POST"])
+async def call_orchestrator():
+    """Call the Azure AI Foundry orchestrator agent."""
+    try:
+        # Import the orchestrator service
+        from app.backend.services.orchestrator_service import get_orchestrator_service
+        
+        # Get request data
+        data = await request.get_json()
+        user_message = data.get("message", "")
+        session_id = data.get("session_id")
+        patient_context = data.get("patient_context", {})
+        
+        if not user_message:
+            return jsonify({
+                "success": False,
+                "error": "Message is required"
+            }), 400
+        
+        # Get orchestrator service and call it
+        orchestrator = await get_orchestrator_service()
+        result = await orchestrator.call_orchestrator(
+            user_message=user_message,
+            session_id=session_id,
+            patient_context=patient_context
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logging.getLogger("orchestrator_api").error(f"Error in orchestrator endpoint: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Internal server error",
+            "response": "I'm sorry, but I'm having trouble processing your request. Please try again later."
+        }), 500
 
 
 if __name__ == "__main__":

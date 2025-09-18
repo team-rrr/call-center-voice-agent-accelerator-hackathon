@@ -1,0 +1,13 @@
+{
+    "python.analysis.extraPaths": [
+        "C:\\Python313\\Lib\\site-packages",
+        "C:\\Users\\guptanitesh\\AppData\\Roaming\\Python\\Python313\\site-packages"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.indexing": true,
+    "python.analysis.packageIndexDepths": [
+        {"name": "azure", "depth": 10}
+    ],
+    "python.analysis.diagnosticMode": "workspace"
+}
