@@ -14,6 +14,17 @@ dependencies = [
     "azure-eventgrid",
     "azure-identity",
     "azure-communication-callautomation",
-    "openai[realtime]"
+    "openai[realtime]",
+    "pydantic",
+    "pytest",
+    "pytest-asyncio",
+    "jsonschema"
 ]
 requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
