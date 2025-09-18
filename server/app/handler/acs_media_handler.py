@@ -12,17 +12,17 @@ from websockets.asyncio.client import connect as ws_connect
 from websockets.typing import Data
 
 # Import orchestrator for voice integration (Phase 2G-1)
-from app.backend.services.simple_orchestrator import get_orchestrator_service
+from app.backend.services.semantic_kernel_orchestrator import get_semantic_kernel_orchestrator_service
 
 logger = logging.getLogger(__name__)
 
 
 def session_config():
-    """Returns the session configuration for Voice Live with orchestrator integration."""
+    """Returns the session configuration for Voice Live with Semantic Kernel orchestrator integration."""
     return {
         "type": "session.update",
         "session": {
-            "instructions": "Healthcare appointment preparation assistant with multi-agent orchestrator integration.",
+            "instructions": "Healthcare appointment preparation assistant with Semantic Kernel multi-agent orchestrator integration.",
             "turn_detection": {
                 "type": "azure_semantic_vad",
                 "threshold": 0.3,
@@ -52,7 +52,7 @@ def session_config():
 
 
 class ACSMediaHandler:
-    """Manages audio streaming between client and Azure Voice Live API with orchestrator integration."""
+    """Manages audio streaming between client and Azure Voice Live API with Semantic Kernel orchestrator integration."""
 
     def __init__(self, config):
         self.endpoint = config["AZURE_VOICE_LIVE_ENDPOINT"]
@@ -78,22 +78,22 @@ class ACSMediaHandler:
     async def initialize_orchestrator(self):
         """Initialize the orchestrator service for voice integration."""
         try:
-            self.orchestrator_service = await get_orchestrator_service()
+            self.orchestrator_service = await get_semantic_kernel_orchestrator_service()
             if self.orchestrator_service:
-                logger.info("[VoiceLiveACSHandler] Orchestrator service initialized successfully")
+                logger.info("[VoiceLiveACSHandler] Semantic Kernel Orchestrator service initialized successfully")
                 return True
             else:
-                logger.warning("[VoiceLiveACSHandler] Failed to initialize orchestrator service")
+                logger.warning("[VoiceLiveACSHandler] Failed to initialize Semantic Kernel orchestrator service")
                 self.use_orchestrator = False
                 return False
         except Exception as e:
-            logger.error(f"[VoiceLiveACSHandler] Error initializing orchestrator: {e}")
+            logger.error(f"[VoiceLiveACSHandler] Error initializing Semantic Kernel orchestrator: {e}")
             self.use_orchestrator = False
             return False
 
     async def connect(self):
-        """Connects to Azure Voice Live API via WebSocket and initializes orchestrator."""
-        # Phase 2G-1: Initialize orchestrator service first
+        """Connects to Azure Voice Live API via WebSocket and initializes Semantic Kernel orchestrator."""
+        # Phase 2G-1: Initialize Semantic Kernel orchestrator service first
         await self.initialize_orchestrator()
         
         url = f"{self.endpoint}/voice-live/realtime?api-version=2025-05-01-preview&model={self.model}"

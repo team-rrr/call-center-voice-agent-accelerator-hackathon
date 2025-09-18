@@ -116,5 +116,42 @@ async def call_orchestrator():
         }), 500
 
 
+@app.route("/api/orchestrator/semantic-kernel", methods=["POST"])
+async def call_semantic_kernel_orchestrator():
+    """Call the Semantic Kernel Multi-Agent orchestrator with coordinated agents."""
+    try:
+        # Import the semantic kernel multi-agent orchestrator service
+        from app.backend.services.semantic_kernel_orchestrator import get_semantic_kernel_orchestrator_service
+        
+        # Get request data
+        data = await request.get_json()
+        user_message = data.get("message", "")
+        session_id = data.get("session_id")
+        patient_context = data.get("patient_context", {})
+        
+        if not user_message:
+            return jsonify({
+                "success": False,
+                "error": "Message is required"
+            }), 400
+        
+        # Get semantic kernel orchestrator service and call it
+        orchestrator = await get_semantic_kernel_orchestrator_service()
+        result = await orchestrator.call_orchestrator(
+            user_message=user_message,
+            session_id=session_id
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logging.getLogger("semantic_kernel_orchestrator_api").error(f"Error in semantic kernel orchestrator endpoint: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Internal server error", 
+            "response": "I'm sorry, but I'm having trouble processing your request with the Semantic Kernel orchestrator. Please try again later."
+        }), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8000)
