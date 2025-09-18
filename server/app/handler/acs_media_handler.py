@@ -9,6 +9,9 @@ import uuid
 from azure.identity.aio import ManagedIdentityCredential
 from websockets.asyncio.client import connect as ws_connect
 from websockets.typing import Data
+from app.kernel_agents.generic_agent import GenericAgent  # Import GenericAgent
+from app.kernel_agents.info_agent import InfoAgent  # Import InfoAgent
+from app.kernel_agents.info_agent import InfoAgent  # Import InfoAgent
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +118,9 @@ class ACSMediaHandler:
     async def _receiver_loop(self):
         """Handles incoming events from the Voice Live WebSocket."""
         try:
+            if self.ws is None:
+                logger.error("[VoiceLiveACSHandler] WebSocket is not connected.")
+                return
             async for message in self.ws:
                 event = json.loads(message)
                 event_type = event.get("type")
@@ -140,7 +146,9 @@ class ACSMediaHandler:
                     case "conversation.item.input_audio_transcription.completed":
                         transcript = event.get("transcript")
                         logger.info("User: %s", transcript)
-
+                        response = InfoAgent.response_text
+                        logger.info("InfoAgent Response: %s", response)
+                        
                     case "conversation.item.input_audio_transcription.failed":
                         error_msg = event.get("error")
                         logger.warning("Transcription Error: %s", error_msg)
@@ -182,7 +190,10 @@ class ACSMediaHandler:
     async def send_message(self, message: Data):
         """Sends data back to client WebSocket."""
         try:
-            await self.incoming_websocket.send(message)
+            if self.incoming_websocket is not None:
+                await self.incoming_websocket.send(message)
+            else:
+                logger.error("[VoiceLiveACSHandler] incoming_websocket is None, cannot send message")
         except Exception:
             logger.exception("[VoiceLiveACSHandler] Failed to send message")
 

@@ -5,7 +5,9 @@ import os
 from app.handler.acs_event_handler import AcsEventHandler
 from app.handler.acs_media_handler import ACSMediaHandler
 from dotenv import load_dotenv
-from quart import Quart, request, websocket
+from quart import Quart, request, websocket, jsonify
+from app.orchestrator.orchestrator import Orchestrator
+from app.kernel_agents.agent_factory import AgentFactory
 
 load_dotenv()
 
@@ -19,9 +21,7 @@ app.config["AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID"] = os.getenv(
     "AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID", ""
 )
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO)
 
 acs_handler = AcsEventHandler(app.config)
 
@@ -77,6 +77,18 @@ async def web_ws():
 async def index():
     """Serves the static index page."""
     return await app.send_static_file("index.html")
+
+@app.route("/voice-call", methods=["POST"])
+async def voice_call():
+    data = await request.get_json()
+    user_input = data.get("message")
+    session_id = data.get("session_id")
+    user_id = data.get("user_id")
+    context = {}  # Load context as needed
+
+    orchestrator = Orchestrator(session_id, user_id, context)
+    response = orchestrator.handle_voice_call(user_input)
+    return jsonify({"response": response})
 
 
 if __name__ == "__main__":
