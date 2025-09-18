@@ -81,10 +81,10 @@ async def index():
 
 @app.route("/api/orchestrator", methods=["POST"])
 async def call_orchestrator():
-    """Call the Azure AI Foundry orchestrator agent."""
+    """Call the Simple Multi-Agent orchestrator with coordinated agents."""
     try:
-        # Import the orchestrator service
-        from app.backend.services.orchestrator_service import get_orchestrator_service
+        # Import the simple multi-agent orchestrator service
+        from app.backend.services.simple_orchestrator import get_orchestrator_service
         
         # Get request data
         data = await request.get_json()
@@ -102,8 +102,7 @@ async def call_orchestrator():
         orchestrator = await get_orchestrator_service()
         result = await orchestrator.call_orchestrator(
             user_message=user_message,
-            session_id=session_id,
-            patient_context=patient_context
+            session_id=session_id
         )
         
         return jsonify(result)

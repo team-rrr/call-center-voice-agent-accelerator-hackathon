@@ -1,8 +1,8 @@
 """Services module for orchestrator and other backend services."""
 
-from .orchestrator_service import get_orchestrator_service, OrchestratorService
+from .simple_orchestrator import get_orchestrator_service, SimpleMultiAgentOrchestratorService
 
 __all__ = [
     "get_orchestrator_service",
-    "OrchestratorService",
+    "SimpleMultiAgentOrchestratorService",
 ]
