@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 import uuid
 
-from ..models.utterance import Utterance
-from ..models.agent import AgentMessage
+from models.utterance import Utterance
+from models.agent import AgentMessage
 
 
 logger = logging.getLogger(__name__)

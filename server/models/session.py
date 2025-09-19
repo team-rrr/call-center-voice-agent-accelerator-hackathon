@@ -34,7 +34,7 @@ class Session(BaseModel):
     status: str = Field(
         ..., 
         description="Session status: 'active' or 'ended'",
-        regex="^(active|ended)$"
+        pattern="^(active|ended)$"
     )
     start_time: datetime = Field(
         default_factory=datetime.now, 
@@ -54,7 +54,7 @@ class Session(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "status": "active",

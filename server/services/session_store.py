@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 import uuid
 
-from ..models.session import Session
-from ..services.redaction import comprehensive_redaction
+from models.session import Session
+from services.redaction import comprehensive_redaction
 
 
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 import uuid
 
-from ..models.task import ToolInvocation
+from models.task import ToolInvocation
 
 
 logger = logging.getLogger(__name__)

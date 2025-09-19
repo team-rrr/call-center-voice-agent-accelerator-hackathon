@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 import asyncio
 
-from ..models.agent import AgentMessage
+from models.agent import AgentMessage
 
 
 logger = logging.getLogger(__name__)

@@ -6,15 +6,15 @@ from datetime import datetime
 import uuid
 
 from quart import websocket
-from ..models.session import Session
-from ..models.utterance import Utterance
-from ..models.agent import AgentMessage
-from ..services.session_store import SessionStore
-from ..services.agent_runtime import AgentRuntime
-from ..services.transcription import TranscriptionService
-from ..services.tts import TTSService
-from ..services.error_events import ErrorEventService
-from ..services.redaction import comprehensive_redaction
+from models.session import Session
+from models.utterance import Utterance
+from models.agent import AgentMessage
+from services.session_store import SessionStore
+from services.agent_runtime import AgentRuntime
+from services.transcription import TranscriptionService
+from services.tts import TTSService
+from services.error_events import ErrorEventService
+from services.redaction import comprehensive_redaction
 
 
 logger = logging.getLogger(__name__)

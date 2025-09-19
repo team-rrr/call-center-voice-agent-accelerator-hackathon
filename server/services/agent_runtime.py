@@ -3,9 +3,9 @@ import logging
 from datetime import datetime
 import uuid
 
-from ..models.agent import Agent, AgentStrategy, EchoAgentStrategy, AgentMessage
-from ..models.utterance import Utterance
-from ..services.context_manager import ContextManager
+from models.agent import Agent, AgentStrategy, EchoAgentStrategy, AgentMessage
+from models.utterance import Utterance
+from services.context_manager import ContextManager
 
 
 logger = logging.getLogger(__name__)
