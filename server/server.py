@@ -21,7 +21,27 @@ app.config["AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID"] = os.getenv(
     "AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID", ""
 )
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    force=True,  # override any prior config if a reloader or prior imports set logging
+)
+
+# Dedicated conversation logger (separate namespace for filtering/formatting)
+conversation_logger = logging.getLogger("conversation")
+conversation_logger.setLevel(logging.INFO)
+stream_exists = any(isinstance(h, logging.StreamHandler) for h in conversation_logger.handlers)
+if not stream_exists:
+    sh = logging.StreamHandler()
+    sh.setFormatter(logging.Formatter("%(asctime)s | CONVO | %(message)s"))
+    conversation_logger.addHandler(sh)
+file_exists = any(isinstance(h, logging.FileHandler) for h in conversation_logger.handlers)
+if not file_exists:
+    fh = logging.FileHandler("conversation.log", encoding="utf-8")
+    fh.setFormatter(logging.Formatter("%(asctime)s | CONVO | %(message)s"))
+    conversation_logger.addHandler(fh)
+conversation_logger.propagate = True
+conversation_logger.info("Conversation logger initialized (force config)")
 
 acs_handler = AcsEventHandler(app.config)
 
@@ -78,6 +98,23 @@ async def index():
     """Serves the static index page."""
     return await app.send_static_file("index.html")
 
+@app.route("/debug/convo")
+async def debug_convo():
+    conversation_logger.info("/debug/convo hit test message")
+    logging.getLogger(__name__).info("Standard logger also hit /debug/convo")
+    return {"status": "ok"}
+
+@app.route("/debug/force-log")
+async def debug_force_log():
+    root = logging.getLogger()
+    info = {
+        "root_level": root.level,
+        "root_handlers": [type(h).__name__ for h in root.handlers],
+        "conversation_handlers": [type(h).__name__ for h in conversation_logger.handlers],
+    }
+    conversation_logger.info("FORCE TEST root_handlers=%s convo_handlers=%s", info["root_handlers"], info["conversation_handlers"])
+    return info
+
 @app.route("/voice-call", methods=["POST"])
 async def voice_call():
     data = await request.get_json()
@@ -87,7 +124,7 @@ async def voice_call():
     context = {}  # Load context as needed
 
     orchestrator = Orchestrator(session_id, user_id, context)
-    response = orchestrator.handle_voice_call(user_input)
+    response = await orchestrator.handle_voice_call(user_input)
     return jsonify({"response": response})
 
 
