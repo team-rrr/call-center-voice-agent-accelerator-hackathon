@@ -14,22 +14,61 @@ logger = logging.getLogger(__name__)
 class SessionStore:
     """
     In-memory session store for managing active voice sessions.
-    In production, this would likely be backed by a database or cache.
+    
+    This class provides thread-safe operations for creating, retrieving, updating,
+    and managing voice interaction sessions. In production deployments, this would
+    typically be backed by a distributed cache (Redis) or database for persistence
+    and scalability across multiple service instances.
+    
+    The store handles:
+    - Session lifecycle management (create, retrieve, update, delete)
+    - Concurrent access protection via async locks
+    - Automatic session cleanup and expiration
+    - Session statistics and metadata tracking
+    
+    Attributes:
+        _sessions: Internal dictionary mapping session IDs to Session objects
+        _lock: Async lock for thread-safe operations
+        
+    Thread Safety:
+        All public methods are async and use internal locking to ensure
+        thread-safe operations in concurrent environments.
+        
+    Example:
+        >>> store = SessionStore()
+        >>> session = await store.create_session()
+        >>> retrieved = await store.get_session(session.id)
+        >>> await store.end_session(session.id)
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize the session store with empty session dictionary and lock.
+        """
         self._sessions: Dict[str, Session] = {}
         self._lock = asyncio.Lock()
+        logger.info("SessionStore initialized")
     
     async def create_session(self, session_id: Optional[str] = None) -> Session:
         """
-        Create a new session.
+        Create a new voice interaction session.
+        
+        Creates a new session with a unique identifier and initializes it in
+        'active' status. If no session_id is provided, a UUID4 will be generated.
         
         Args:
-            session_id: Optional session ID, will generate if not provided
+            session_id: Optional session identifier. If None, a UUID4 is generated.
             
         Returns:
-            Created session object
+            Session: The newly created session object with 'active' status
+            
+        Raises:
+            ValueError: If the provided session_id already exists
+            
+        Example:
+            >>> session = await store.create_session()
+            >>> print(session.id)  # UUID4 string
+            >>> print(session.status)  # "active"
         """
         async with self._lock:
             if session_id is None:
@@ -46,7 +85,14 @@ class SessionStore:
             )
             
             self._sessions[session_id] = session
-            logger.info(f"Created session {session_id}")
+            logger.info(
+                "Created new session",
+                extra={
+                    "session_id": session_id,
+                    "start_time": session.start_time.isoformat(),
+                    "total_sessions": len(self._sessions)
+                }
+            )
             return session
     
     async def get_session(self, session_id: str) -> Optional[Session]:
