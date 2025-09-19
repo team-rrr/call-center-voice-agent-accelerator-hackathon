@@ -2,7 +2,8 @@ param location string
 param containerRegistryName string
 param repositoryName string = 'voice-live-agent/app-voiceagent'
 param imageTag string = 'latest'
-param sourceLocation string
+param githubRepo string = 'https://github.com/team-rrr/call-center-voice-agent-accelerator-hackathon.git'
+param branch string = 'bicep-power'
 param identityId string
 param tags object = {}
 
@@ -16,13 +17,24 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
   name: last(split(identityId, '/'))
 }
 
-// Grant the identity ACR Build permission
+// Grant the identity ACR Push permission
+resource acrPushRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: containerRegistry
+  name: guid(subscription().id, resourceGroup().id, userAssignedIdentity.id, 'acrPushRole')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8311e382-0749-4cb8-b61a-304f252e45ec') // AcrPush role
+    principalType: 'ServicePrincipal'
+    principalId: userAssignedIdentity.properties.principalId
+  }
+}
+
+// Grant the identity ACR Build permission (needed for az acr build command)
 resource acrBuildRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: containerRegistry
   name: guid(subscription().id, resourceGroup().id, userAssignedIdentity.id, 'acrBuildRole')
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8311e382-0749-4cb8-b61a-304f252e45ec') // AcrBuild role
-    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c') // Contributor role (needed for builds)
+    principalType: 'ServicePrincipal' 
     principalId: userAssignedIdentity.properties.principalId
   }
 }
@@ -57,27 +69,47 @@ resource containerBuild 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
         value: imageTag
       }
       {
-        name: 'SOURCE_LOCATION'
-        value: sourceLocation
+        name: 'GITHUB_REPO'
+        value: githubRepo
+      }
+      {
+        name: 'BRANCH'
+        value: branch
       }
     ]
     scriptContent: '''
       echo "Starting container build process..."
+      echo "Registry: ${REGISTRY_NAME}"
+      echo "GitHub Repo: ${GITHUB_REPO}"
+      echo "Branch: ${BRANCH}"
+      
+      # Install git if not available
+      which git || (apt-get update && apt-get install -y git)
+      version=$(git --version)
+      echo "Git version: $version"
+      # Clone the repository
+      echo "Cloning repository..."
+      git clone https://github.com/team-rrr/call-center-voice-agent-accelerator-hackathon.git
+      cd call-center-voice-agent-accelerator-hackathon
+
+      
+      # Verify we have the server directory and Dockerfile
+      ls 
+      
       
       # Login to Azure Container Registry
+      echo "Logging into ACR..."
       az acr login --name $REGISTRY_NAME
       
-      # Build and push the container image
-      az acr build --registry $REGISTRY_NAME \
-                   --image $REPOSITORY_NAME:$IMAGE_TAG \
-                   --file server/Dockerfile \
-                   $SOURCE_LOCATION
+      # Build and push the container image from the server directory
+      echo "Building container image..."
+      az acr build -r testalon4vfp2h.azurecr.io -t voice-live-agent/app-voiceagent:latest ./server
       
       echo "Container image built and pushed successfully"
       echo "Image: $REGISTRY_NAME.azurecr.io/$REPOSITORY_NAME:$IMAGE_TAG"
     '''
   }
-  dependsOn: [acrBuildRole]
+  dependsOn: [acrPushRole, acrBuildRole]
 }
 
 output imageName string = '${containerRegistryName}.azurecr.io/${repositoryName}:${imageTag}'
