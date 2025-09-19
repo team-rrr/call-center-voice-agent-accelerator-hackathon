@@ -19,7 +19,7 @@ dependencies = [
     "openai[realtime]",
     "semantic-kernel"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 
 [tool.mypy]
 python_version = "3.11"

@@ -6,8 +6,9 @@ import json
 import logging
 import uuid
 from typing import Optional
+import urllib.parse
 
-from azure.identity.aio import ManagedIdentityCredential
+from azure.identity.aio import ManagedIdentityCredential, DefaultAzureCredential
 from websockets.asyncio.client import connect as ws_connect
 from websockets.typing import Data
 
@@ -22,7 +23,6 @@ def session_config():
     return {
         "type": "session.update",
         "session": {
-            "instructions": "Healthcare appointment preparation assistant with Semantic Kernel multi-agent orchestrator integration.",
             "turn_detection": {
                 "type": "azure_semantic_vad",
                 "threshold": 0.3,
@@ -49,6 +49,25 @@ def session_config():
             }
         },
     }
+    # return {
+    #     "input_audio_sampling_rate": 24000,
+    #     "instructions": "Healthcare appointment preparation assistant with Semantic Kernel multi-agent orchestrator integration.",
+    #     "turn_detection": {
+    #         "type": "server_vad",
+    #         "threshold": 0.5,
+    #         "prefix_padding_ms": 300,
+    #         "silence_duration_ms": 500,
+    #     },
+    #     "tool_choice": "auto",
+    #     "input_audio_noise_reduction": {"type": "azure_deep_noise_suppression"},
+    #     "input_audio_echo_cancellation": {"type": "server_echo_cancellation"},
+    #     "voice": {
+    #         "name": "en-IN-AartiIndicNeural",
+    #         "type": "azure-standard",
+    #         "temperature": 0.8,
+    #     },
+    #     "input_audio_transcription": {"model": "whisper-1"},
+    # }
 
 
 class ACSMediaHandler:
@@ -94,34 +113,50 @@ class ACSMediaHandler:
     async def connect(self):
         """Connects to Azure Voice Live API via WebSocket and initializes Semantic Kernel orchestrator."""
         # Phase 2G-1: Initialize Semantic Kernel orchestrator service first
-        await self.initialize_orchestrator()
-        
-        url = f"{self.endpoint}/voice-live/realtime?api-version=2025-05-01-preview&model={self.model}"
-        url = url.replace("https://", "wss://")
+        try:
+            await self.initialize_orchestrator()
+            # wss://<your-ai-foundry-resource-name>.cognitiveservices.azure.com/voice-live/realtime?api-version=2025-05-01-preview&agent-project-name=<agent-project-name>&agent-id=<agent-id>&agent-access-token=<access-token>
+            url = f"{self.endpoint}/voice-live/realtime?api-version=2025-05-01-preview&agent-project-name=nurse-voice-agent-ai-foundry&agent-id=asst_5Eqb4UJ43MYXj5shQFl3ubfC"
+            url = url.replace("https://", "wss://")
 
-        headers = {"x-ms-client-request-id": self._generate_guid()}
+            headers = {"x-ms-client-request-id": self._generate_guid()}
 
-        if self.client_id:
-            credential = ManagedIdentityCredential(
-                managed_identity_client_id=self.client_id
+            credential = DefaultAzureCredential()
+            tokenAI = await credential.get_token(
+                "https://ai.azure.com/.default"
             )
-            token = await credential.get_token(
+            tokenOther = await credential.get_token(
                 "https://cognitiveservices.azure.com/.default"
             )
-            headers["Authorization"] = f"Bearer {token.token}"
-        else:
-            headers["api-key"] = self.api_key
 
-        self.ws = await ws_connect(url, additional_headers=headers)
-        logger.info("[VoiceLiveACSHandler] Connected to Voice Live API")
+            urlEncodedToken = urllib.parse.quote(tokenAI.token)
+            url += f"&agent-access-token={urlEncodedToken}"
+            headers["Authorization"] = f"Bearer {tokenAI.token}"
 
-        await self._send_json(session_config())
-        
-        # Phase 2G-1: Don't auto-create response - let orchestrator handle it
-        # await self._send_json({"type": "response.create"})
+            # if self.client_id:
+            #     credential = ManagedIdentityCredential(
+            #         managed_identity_client_id=self.client_id
+            #     )
+            #     token = await credential.get_token(
+            #         "https://cognitiveservices.azure.com/.default"
+            #     )
+            #     headers["Authorization"] = f"Bearer {token.token}"
+            # else:
+            # headers["api-key"] = self.api_key
 
-        asyncio.create_task(self._receiver_loop())
-        self.send_task = asyncio.create_task(self._sender_loop())
+            self.ws = await ws_connect(url, additional_headers=headers)
+            logger.info("[VoiceLiveACSHandler] Connected to Voice Live API")
+
+            await self._send_json(session_config())
+
+            # Phase 2G-1: Don't auto-create response - let orchestrator handle it
+            # await self._send_json({"type": "response.create"})
+
+            asyncio.create_task(self._receiver_loop())
+            self.send_task = asyncio.create_task(self._sender_loop())
+        except Exception as e:
+            logger.error(f"Error connecting: {e}")
+            raise
 
     async def init_incoming_websocket(self, socket, is_raw_audio=True):
         """Sets up incoming ACS WebSocket."""
@@ -216,7 +251,7 @@ class ACSMediaHandler:
             
             await self._send_json(response_create)
             logger.info("[VoiceLiveACSHandler] Sent orchestrator response for TTS conversion")
-            
+
         except Exception as e:
             logger.error(f"[VoiceLiveACSHandler] Error sending orchestrator response: {e}")
             self.response_in_progress = False
@@ -228,8 +263,8 @@ class ACSMediaHandler:
                 msg = await self.send_queue.get()
                 if self.ws:
                     await self.ws.send(msg)
-        except Exception:
-            logger.exception("[VoiceLiveACSHandler] Sender loop error")
+        except Exception as e:
+            logger.exception(f"[VoiceLiveACSHandler] Sender loop error {e}")
 
     async def _receiver_loop(self):
         """Handles incoming events from the Voice Live WebSocket with orchestrator integration."""
@@ -260,16 +295,16 @@ class ACSMediaHandler:
                     case "input_audio_buffer.speech_stopped":
                         logger.info("Speech stopped")
 
-                    case "conversation.item.input_audio_transcription.completed":
-                        # Phase 2G-1: This is where we intercept user input and route to orchestrator
-                        transcript = event.get("transcript")
-                        logger.info("User: %s", transcript)
-                        
-                        if transcript and transcript.strip() and not self.response_in_progress:
-                            # Generate response using orchestrator instead of Voice Live AI
-                            orchestrator_response = await self._generate_orchestrator_response(transcript)
-                            if orchestrator_response:
-                                await self._send_orchestrator_response(orchestrator_response)
+                    # case "conversation.item.input_audio_transcription.completed":
+                    #     # Phase 2G-1: This is where we intercept user input and route to orchestrator
+                    #     transcript = event.get("transcript")
+                    #     logger.info("User: %s", transcript)
+                    #
+                    #     if transcript and transcript.strip() and not self.response_in_progress:
+                    #         # Generate response using orchestrator instead of Voice Live AI
+                    #         orchestrator_response = await self._generate_orchestrator_response(transcript)
+                    #         if orchestrator_response:
+                    #             await self._send_orchestrator_response(orchestrator_response)
 
                     case "conversation.item.input_audio_transcription.failed":
                         error_msg = event.get("error")
@@ -314,8 +349,9 @@ class ACSMediaHandler:
                         logger.debug(
                             "[VoiceLiveACSHandler] Other event: %s", event_type
                         )
-        except Exception:
-            logger.exception("[VoiceLiveACSHandler] Receiver loop error")
+        except Exception as e:
+            logger.error(f"[VoiceLiveACSHandler] Receiver loop error {e}")
+            raise
 
     async def send_message(self, message: Data):
         """Sends data back to client WebSocket."""
