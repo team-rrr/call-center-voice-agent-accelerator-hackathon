@@ -11,11 +11,11 @@ hooks:
       echo "=== Installing dependencies ==="
       
       # Check if jq is installed, install if not
-      if ! command -v jq &> /dev/null; then
+      if command -v jq >/dev/null 2>&1; then
+        echo "jq is already installed at: $(which jq)"
+      else
         echo "jq not found, installing..."
         sudo apt-get update && sudo apt-get install -y jq
-      else
-        echo "jq is already installed"
       fi
       
       echo "=== Phase 1: Deploying registry and identity ==="
