@@ -8,6 +8,16 @@ hooks:
   preprovision:
     shell: sh
     run: |
+      echo "=== Installing dependencies ==="
+      
+      # Check if jq is installed, install if not
+      if ! command -v jq &> /dev/null; then
+        echo "jq not found, installing..."
+        sudo apt-get update && sudo apt-get install -y jq
+      else
+        echo "jq is already installed"
+      fi
+      
       echo "=== Phase 1: Deploying registry and identity ==="
       
       # Get environment details
