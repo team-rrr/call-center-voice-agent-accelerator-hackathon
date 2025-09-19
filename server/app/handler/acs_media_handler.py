@@ -40,7 +40,7 @@ def session_config():
             "voice": {
                 "name": "en-US-Aria:DragonHDLatestNeural",
                 "type": "azure-standard",
-                "temperature": 0.7,  # Slightly more controlled for healthcare
+                "temperature": 0.5,  # Slightly more controlled for healthcare
             },
             # Phase 2G-1: Configure for manual response mode
             "modalities": ["text", "audio"],
@@ -295,16 +295,22 @@ class ACSMediaHandler:
                     case "input_audio_buffer.speech_stopped":
                         logger.info("Speech stopped")
 
-                    # case "conversation.item.input_audio_transcription.completed":
-                    #     # Phase 2G-1: This is where we intercept user input and route to orchestrator
-                    #     transcript = event.get("transcript")
-                    #     logger.info("User: %s", transcript)
-                    #
-                    #     if transcript and transcript.strip() and not self.response_in_progress:
-                    #         # Generate response using orchestrator instead of Voice Live AI
-                    #         orchestrator_response = await self._generate_orchestrator_response(transcript)
-                    #         if orchestrator_response:
-                    #             await self._send_orchestrator_response(orchestrator_response)
+                    case "conversation.item.input_audio_transcription.completed":
+                        # Phase 2G-1: This is where we intercept user input and route to orchestrator
+                        transcript = event.get("transcript")
+                        logger.info("User: %s", transcript)
+                        
+                        # Send user transcript to frontend for display
+                        if transcript and transcript.strip():
+                            await self.send_message(
+                                json.dumps({"Kind": "UserTranscript", "Text": transcript})
+                            )
+
+                        if transcript and transcript.strip() and not self.response_in_progress:
+                            # Generate response using orchestrator instead of Voice Live AI
+                            orchestrator_response = await self._generate_orchestrator_response(transcript)
+                            if orchestrator_response:
+                                await self._send_orchestrator_response(orchestrator_response)
 
                     case "conversation.item.input_audio_transcription.failed":
                         error_msg = event.get("error")
@@ -324,7 +330,7 @@ class ACSMediaHandler:
                         transcript = event.get("transcript")
                         logger.info("AI: %s", transcript)
                         await self.send_message(
-                            json.dumps({"Kind": "Transcription", "Text": transcript})
+                            json.dumps({"Kind": "AgentResponse", "Text": transcript})
                         )
 
                     case "response.audio.delta":

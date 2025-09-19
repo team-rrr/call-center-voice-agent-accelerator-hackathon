@@ -9,7 +9,7 @@ from quart import Quart, request, websocket, jsonify
 
 load_dotenv()
 
-app = Quart(__name__)
+app = Quart(__name__, static_folder='static', static_url_path='/static')
 app.config["AZURE_VOICE_LIVE_API_KEY"] = os.getenv("AZURE_VOICE_LIVE_API_KEY", "")
 app.config["AZURE_VOICE_LIVE_ENDPOINT"] = os.getenv("AZURE_VOICE_LIVE_ENDPOINT")
 app.config["VOICE_LIVE_MODEL"] = os.getenv("VOICE_LIVE_MODEL", "gpt-4o-mini")
@@ -77,6 +77,22 @@ async def web_ws():
 async def index():
     """Serves the static index page."""
     return await app.send_static_file("index.html")
+
+
+@app.route("/health")
+async def health_check():
+    """Health check endpoint."""
+    return jsonify({"status": "healthy", "message": "Voice Live Healthcare Agent Server is running"})
+
+
+@app.route("/static/<path:filename>")
+async def static_files(filename):
+    """Explicitly serve static files."""
+    try:
+        return await app.send_static_file(filename)
+    except Exception as e:
+        logging.getLogger("static_files").error(f"Error serving static file {filename}: {e}")
+        return f"File not found: {filename}", 404
 
 
 @app.route("/api/orchestrator", methods=["POST"])

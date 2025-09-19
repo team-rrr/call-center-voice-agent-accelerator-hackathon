@@ -7,16 +7,39 @@
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 20px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f0f4f8;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .voice-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      position: sticky;
+      top: 20px;
+    }
+
+    .conversation-section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: #333;
-      text-align: center;
+      height: calc(100vh - 40px);
     }
 
     h1 {
@@ -70,43 +93,315 @@
       display: block;
     }
 
+    .conversation-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e1e5e9;
+      background: #f8f9fa;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .conversation-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #333;
+    }
+
+    .conversation-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      max-width: 85%;
+      word-wrap: break-word;
+      line-height: 1.4;
+    }
+
+    .message.user {
+      background: #0078d4;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.agent {
+      background: #f3f2f1;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border-left: 3px solid #0078d4;
+    }
+
+    .message.system {
+      background: #fff4e6;
+      color: #8a6914;
+      align-self: center;
+      font-style: italic;
+      font-size: 0.9rem;
+      border: 1px solid #f7e6cd;
+    }
+
+    .message-time {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+
+    .message-content {
+      line-height: 1.5;
+    }
+
+    .message-content h1, .message-content h2, .message-content h3 {
+      margin: 0.5rem 0;
+      color: inherit;
+    }
+
+    .message-content h1 { font-size: 1.2rem; }
+    .message-content h2 { font-size: 1.1rem; }
+    .message-content h3 { font-size: 1rem; font-weight: 600; }
+
+    .message-content hr {
+      margin: 1rem 0;
+      border: none;
+      border-top: 1px solid #ddd;
+    }
+
+    .message-content strong {
+      font-weight: 600;
+    }
+
+    .message-content em {
+      font-style: italic;
+    }
+
+    .message-content a {
+      color: #0078d4;
+      text-decoration: underline;
+    }
+
+    .message-content a:hover {
+      color: #106ebe;
+    }
+
+    .conversation-status {
+      padding: 1rem;
+      border-top: 1px solid #e1e5e9;
+      background: #f8f9fa;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
     footer {
-      position: absolute;
-      bottom: 1rem;
+      text-align: center;
+      margin-top: 2rem;
       font-size: 0.85rem;
       color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .voice-section {
+        position: static;
+      }
+      
+      .conversation-section {
+        height: 50vh;
+      }
+      
+      body {
+        padding: 10px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ Voice Live Demo UX</h1>
-  <div class="subtitle">Talk to an AI agent in real time. Click below to start.</div>
+  <div class="container">
+    <!-- Voice Control Section -->
+    <div class="voice-section">
+      <h1>🎙️ Voice Live Demo</h1>
+      <div class="subtitle">Talk to an AI healthcare agent in real time</div>
 
-  <div class="controls">
-    <button id="startBtn" onclick="startStreaming()" title="Start talking to the voice agent">
-      Start Talking to Agent
-    </button>
-    <button id="stopBtn" onclick="stopStreaming()" disabled title="End the conversation with the agent">
-      Stop Conversation
-    </button>
+      <div class="controls">
+        <button id="startBtn" onclick="startStreaming()" title="Start talking to the voice agent">
+          Start Conversation
+        </button>
+        <button id="stopBtn" onclick="stopStreaming()" disabled title="End the conversation with the agent">
+          Stop Conversation
+        </button>
+      </div>
+
+      <audio id="ttsPlayer" autoplay></audio>
+    </div>
+
+    <!-- Conversation Display Section -->
+    <div class="conversation-section">
+      <div class="conversation-header">
+        <h2>💬 Conversation</h2>
+      </div>
+      
+      <div class="conversation-messages" id="conversationMessages">
+        <div class="message system">
+          Welcome! Start a conversation to see the transcript here.
+        </div>
+      </div>
+      
+      <div class="conversation-status" id="conversationStatus">
+        Ready to start conversation
+      </div>
+    </div>
   </div>
 
-  <audio id="ttsPlayer" autoplay></audio>
-
   <footer>
-    Powered by Azure Voice Live • Demo Mode
+    Powered by Azure Voice Live • Healthcare Agent Demo
   </footer>
 
   <script>
     let mediaStream, source, processor, socket;
     let audioContext = new AudioContext({ sampleRate: 24000 });
     let workletNode;
+    let conversationHistory = [];
+    let isListening = false;
+    let currentUserMessage = '';
 
     // Load the AudioWorkletProcessor
     async function loadAudioProcessor() {
       await audioContext.audioWorklet.addModule('/static/audio-processor.js');
       workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
       workletNode.connect(audioContext.destination);
+    }
+
+    // Conversation management functions
+    function addMessage(text, type, timestamp = new Date()) {
+      const message = {
+        text: text,
+        type: type, // 'user', 'agent', 'system'
+        timestamp: timestamp
+      };
+      
+      conversationHistory.push(message);
+      
+      // Use requestAnimationFrame for smooth UI updates
+      requestAnimationFrame(() => {
+        displayMessage(message);
+        requestAnimationFrame(() => {
+          scrollToBottom();
+        });
+      });
+    }
+
+    // Optimized markdown formatting function
+    function formatMarkdown(text) {
+      if (!text) return '';
+      
+      // Use a more efficient approach with fewer regex operations
+      const replacements = [
+        // Headers
+        [/### (.*$)/gm, '<h3>$1</h3>'],
+        [/## (.*$)/gm, '<h2>$1</h2>'],
+        [/# (.*$)/gm, '<h1>$1</h1>'],
+        // Bold and italic
+        [/\*\*(.*?)\*\*/g, '<strong>$1</strong>'],
+        [/\*(.*?)\*/g, '<em>$1</em>'],
+        // Lists - convert numbered lists to HTML
+        [/^(\d+)\.\s+(.*$)/gm, '<div class="numbered-item">$1. $2</div>'],
+        // Bullet points
+        [/^□ (.*$)/gm, '<div class="bullet-item">• $1</div>'],
+        [/^- (.*$)/gm, '<div class="bullet-item">• $1</div>'],
+        // Line breaks (do this after list processing)
+        [/\n/g, '<br>'],
+        // Horizontal rules
+        [/---/g, '<hr>'],
+        // Links
+        [/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>']
+      ];
+      
+      let formatted = text;
+      for (const [pattern, replacement] of replacements) {
+        formatted = formatted.replace(pattern, replacement);
+      }
+      
+      return formatted;
+    }
+
+    function displayMessage(message) {
+      const messagesContainer = document.getElementById('conversationMessages');
+      
+      // Use document fragment for efficient DOM manipulation
+      const fragment = document.createDocumentFragment();
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${message.type}`;
+      
+      const messageText = document.createElement('div');
+      messageText.className = 'message-content';
+      
+      if (message.type === 'agent') {
+        // Format agent responses with markdown
+        messageText.innerHTML = formatMarkdown(message.text);
+      } else {
+        // Plain text for user and system messages
+        messageText.textContent = message.text;
+      }
+      
+      messageDiv.appendChild(messageText);
+      
+      const messageTime = document.createElement('div');
+      messageTime.className = 'message-time';
+      messageTime.textContent = message.timestamp.toLocaleTimeString();
+      messageDiv.appendChild(messageTime);
+      
+      fragment.appendChild(messageDiv);
+      messagesContainer.appendChild(fragment);
+    }
+
+    // Throttle scroll updates to prevent lag
+    let scrollTimeout;
+    function scrollToBottom() {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      scrollTimeout = setTimeout(() => {
+        const messagesContainer = document.getElementById('conversationMessages');
+        if (messagesContainer) {
+          messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 50); // Small delay to batch scroll updates
+    }
+
+    // Debounce status updates
+    let statusTimeout;
+    function updateStatus(status) {
+      if (statusTimeout) {
+        clearTimeout(statusTimeout);
+      }
+      
+      statusTimeout = setTimeout(() => {
+        const statusElement = document.getElementById('conversationStatus');
+        if (statusElement) {
+          statusElement.textContent = status;
+        }
+      }, 10); // Very small delay to batch status updates
+    }
+
+    function clearConversation() {
+      conversationHistory = [];
+      const messagesContainer = document.getElementById('conversationMessages');
+      messagesContainer.innerHTML = '<div class="message system">Conversation started. Speak to begin...</div>';
+      updateStatus('Listening for your voice...');
     }
 
     async function playAudio(arrayBuffer) {
@@ -183,28 +478,75 @@
         await startMicrophone();
         document.getElementById("startBtn").disabled = true;
         document.getElementById("stopBtn").disabled = false;
+        
+        // Clear conversation and add start message
+        clearConversation();
+        addMessage("Voice conversation started", "system");
+        updateStatus("🎤 Listening... Speak now");
+        isListening = true;
       };
 
       socket.onmessage = async (event) => {
         if (typeof event.data === "string") {
           const msg = JSON.parse(event.data);
+          
           if (msg.Kind === "StopAudio") {
-            console.log("Audio stopped")
+            console.log("Audio stopped");
             stopPlayback();
+            updateStatus("🎤 Listening... Speak now");
           }
+          
+          if (msg.Kind === "UserTranscript") {
+            console.log("User said:", msg.Text);
+            
+            // Add user message to conversation
+            if (msg.Text && msg.Text.trim()) {
+              addMessage(msg.Text, "user");
+              updateStatus("🤖 Agent is responding...");
+            }
+          }
+          
+          if (msg.Kind === "AgentResponse") {
+            console.log("Agent Response:", msg.Text);
+            
+            // Add agent response to conversation with markdown formatting
+            if (msg.Text && msg.Text.trim()) {
+              addMessage(msg.Text, "agent");
+              updateStatus("🎤 Listening... Speak now");
+            }
+          }
+          
+          // Keep old Transcription handling for backward compatibility
           if (msg.Kind === "Transcription") {
             console.log("Transcript:", msg.Text);
+            
+            // Add user message to conversation
+            if (msg.Text && msg.Text.trim()) {
+              addMessage(msg.Text, "user");
+              updateStatus("🤖 Agent is responding...");
+            }
           }
-         }
+          
+          // Handle other message types for conversation display
+          if (msg.Kind === "ConversationStart") {
+            addMessage("Conversation started with healthcare agent", "system");
+          }
+          
+          if (msg.Kind === "Error") {
+            addMessage(`Error: ${msg.Text || 'Unknown error occurred'}`, "system");
+            updateStatus("❌ Error occurred - Ready to restart");
+          }
+        }
         else if (event.data instanceof ArrayBuffer) {
             try {
               playAudio(event.data);
+              updateStatus("🔊 Agent speaking...");
             } catch (e) {
               console.error("Failed to decode audio:", e);
+              addMessage("Audio playback error", "system");
             }
         }
-        else
-        {
+        else {
           console.log("unknown message", event.data);
         }
       }
@@ -214,9 +556,18 @@
         stopMicrophone();
         document.getElementById("startBtn").disabled = false;
         document.getElementById("stopBtn").disabled = true;
+        
+        // Update conversation display
+        addMessage("Voice conversation ended", "system");
+        updateStatus("Conversation ended - Click 'Start Conversation' to begin again");
+        isListening = false;
       };
 
-      socket.onerror = (err) => console.error("WebSocket error", err);
+      socket.onerror = (err) => {
+        console.error("WebSocket error", err);
+        addMessage("Connection error occurred", "system");
+        updateStatus("❌ Connection error - Please try again");
+      };
     }
 
     // Initialize the audio processor
